@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reels</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
+.container{max-width:850px;margin:40px auto;padding:20px}
+header{text-align:center;margin-bottom:35px}
+.logo{font-size:38px;font-weight:900;color:#ff7545}
+header p{color:#aaa}
+.card{background:#1c1c1c;border:1px solid #333;border-radius:16px;padding:22px;margin-bottom:20px}
+h2{font-size:19px;margin-top:0}
+input{width:100%;padding:16px;background:#111;color:white;border:1px solid #444;border-radius:10px;font-size:15px}
+button{border:0;border-radius:10px;padding:14px 20px;background:#ff7545;color:#fff;font-size:15px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+#analyze{width:100%;margin-top:14px}
+#status{margin-top:15px;color:#ffb18e;line-height:1.5}
+.clip{padding:16px;background:#292929;border-radius:12px;margin-top:14px}
+.clip h3{margin:0 0 8px}
+.clip p{color:#aaa;font-size:14px}
+.download{background:#333;margin-top:8px}
+.preview{width:100%;max-width:300px;aspect-ratio:9/16;background:#080808;border:1px solid #444;border-radius:16px;margin:15px auto;display:flex;align-items:center;justify-content:center;color:#777;text-align:center;padding:20px}
+.hidden{display:none}
+footer{text-align:center;color:#777;font-size:12px;margin-top:35px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<div class="logo">REELS</div>
+<p>YouTube videolarından otomatik Reels oluştur</p>
+</header>
+
+<section class="card">
+<h2>Video bağlantısı</h2>
+<input id="videoUrl" type="url" placeholder="YouTube video bağlantısını yapıştır">
+<button id="analyze">Videoyu analiz et</button>
+<div id="status"></div>
+</section>
+
+<section id="results" class="card hidden">
+<h2>Oluşturulan Reels</h2>
+<div id="clips"></div>
+</section>
+
+<footer>REELS · Otomatik video kesitleme platformu</footer>
+
+</div>
+
+<script>
+const button=document.getElementById("analyze");
+const status=document.getElementById("status");
+
+button.onclick=async()=>{
+ const url=document.getElementById("videoUrl").value.trim();
+
+ if(!url){
+  status.textContent="Lütfen bir YouTube bağlantısı gir.";
+  return;
+ }
+
+ button.disabled=true;
+ status.textContent="Sunucu bağlantısı bekleniyor...";
+
+ try{
+  const response=await fetch("/api/analyze",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({url})
+  });
+
+  if(!response.ok) throw new Error("Sunucu hatası");
+
+  const data=await response.json();
+  const results=document.getElementById("results");
+  const clips=document.getElementById("clips");
+
+  clips.innerHTML="";
+
+  data.clips.forEach((clip,index)=>{
+   const item=document.createElement("div");
+   item.className="clip";
+
+   const title=document.createElement("h3");
+   title.textContent=clip.title||"Reels "+(index+1);
+
+   const duration=document.createElement("p");
+   duration.textContent=clip.duration||"";
+
+   const preview=document.createElement("video");
+   preview.controls=true;
+   preview.src=clip.url;
+   preview.style.width="100%";
+   preview.style.maxWidth="300px";
+   preview.style.display="block";
+
+   const download=document.createElement("a");
+   download.href=clip.url;
+   download.download="reels-"+(index+1)+".mp4";
+
+   const downloadButton=document.createElement("button");
+   downloadButton.className="download";
+   downloadButton.textContent="MP4 indir";
+   download.appendChild(downloadButton);
+
+   item.append(title,duration,preview,download);
+   clips.appendChild(item);
+  });
+
+  results.classList.remove("hidden");
+  status.textContent="Reels videoları hazır.";
+
+ }catch(error){
+  status.textContent="Analiz sunucusu henüz kurulmadı. Bir sonraki adımda bağlantısını yapacağız.";
+ }finally{
+  button.disabled=false;
+ }
+};
+</script>
+</body>
+</html>
