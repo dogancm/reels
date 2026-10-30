@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,96 +28,86 @@ footer{text-align:center;color:#777;font-size:12px;margin-top:35px}
 </head>
 <body>
 <div class="container">
-
 <header>
 <div class="logo">REELS</div>
 <p>YouTube videolarından otomatik Reels oluştur</p>
 </header>
-
 <section class="card">
 <h2>Video bağlantısı</h2>
 <input id="videoUrl" type="url" placeholder="YouTube video bağlantısını yapıştır">
 <button id="analyze">Videoyu analiz et</button>
 <div id="status"></div>
 </section>
-
 <section id="results" class="card hidden">
 <h2>Oluşturulan Reels</h2>
 <div id="clips"></div>
 </section>
-
 <footer>REELS · Otomatik video kesitleme platformu</footer>
-
 </div>
-
 <script>
+const API_URL="https://reels-faf2.onrender.com";
 const button=document.getElementById("analyze");
 const status=document.getElementById("status");
-
 button.onclick=async()=>{
- const url=document.getElementById("videoUrl").value.trim();
-
- if(!url){
-  status.textContent="Lütfen bir YouTube bağlantısı gir.";
-  return;
- }
-
- button.disabled=true;
- status.textContent="Sunucu bağlantısı bekleniyor...";
-
- try{
-  const response=await fetch("/api/analyze",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({url})
-  });
-
-  if(!response.ok) throw new Error("Sunucu hatası");
-
-  const data=await response.json();
-  const results=document.getElementById("results");
-  const clips=document.getElementById("clips");
-
-  clips.innerHTML="";
-
-  data.clips.forEach((clip,index)=>{
-   const item=document.createElement("div");
-   item.className="clip";
-
-   const title=document.createElement("h3");
-   title.textContent=clip.title||"Reels "+(index+1);
-
-   const duration=document.createElement("p");
-   duration.textContent=clip.duration||"";
-
-   const preview=document.createElement("video");
-   preview.controls=true;
-   preview.src=clip.url;
-   preview.style.width="100%";
-   preview.style.maxWidth="300px";
-   preview.style.display="block";
-
-   const download=document.createElement("a");
-   download.href=clip.url;
-   download.download="reels-"+(index+1)+".mp4";
-
-   const downloadButton=document.createElement("button");
-   downloadButton.className="download";
-   downloadButton.textContent="MP4 indir";
-   download.appendChild(downloadButton);
-
-   item.append(title,duration,preview,download);
-   clips.appendChild(item);
-  });
-
-  results.classList.remove("hidden");
-  status.textContent="Reels videoları hazır.";
-
- }catch(error){
-  status.textContent="Analiz sunucusu henüz kurulmadı. Bir sonraki adımda bağlantısını yapacağız.";
- }finally{
-  button.disabled=false;
- }
+const url=document.getElementById("videoUrl").value.trim();
+if(!url){
+status.textContent="Lütfen bir YouTube bağlantısı gir.";
+return;
+}
+if(!/(youtube\.com|youtu\.be)/i.test(url)){
+status.textContent="Lütfen geçerli bir YouTube bağlantısı gir.";
+return;
+}
+button.disabled=true;
+status.textContent="Sunucuya bağlanılıyor...";
+document.getElementById("results").classList.add("hidden");
+try{
+const response=await fetch(API_URL+"/api/analyze",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({url:url})
+});
+const data=await response.json();
+if(!response.ok){
+throw new Error(data.error||"Sunucu isteği başarısız oldu.");
+}
+if(!Array.isArray(data.clips)||data.clips.length===0){
+throw new Error("Sunucu henüz oluşturulmuş Reels videosu göndermedi.");
+}
+const clips=document.getElementById("clips");
+clips.innerHTML="";
+data.clips.forEach((clip,index)=>{
+const item=document.createElement("div");
+item.className="clip";
+const title=document.createElement("h3");
+title.textContent=clip.title||"Reels "+(index+1);
+const duration=document.createElement("p");
+duration.textContent=clip.duration||"";
+const preview=document.createElement("video");
+preview.controls=true;
+preview.playsInline=true;
+preview.src=clip.url;
+preview.style.width="100%";
+preview.style.maxWidth="300px";
+preview.style.display="block";
+preview.style.margin="15px auto";
+const download=document.createElement("a");
+download.href=clip.url;
+download.download="reels-"+(index+1)+".mp4";
+const downloadButton=document.createElement("button");
+downloadButton.className="download";
+downloadButton.textContent="MP4 indir";
+download.appendChild(downloadButton);
+item.append(title,duration,preview,download);
+clips.appendChild(item);
+});
+document.getElementById("results").classList.remove("hidden");
+status.textContent="Reels videoları hazır.";
+}catch(error){
+status.textContent="İşlem başarısız: "+error.message;
+}finally{
+button.disabled=false;
+}
 };
 </script>
 </body>
